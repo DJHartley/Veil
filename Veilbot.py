@@ -21,6 +21,11 @@ from twisted.application import internet
 from twisted.words.protocols import irc
 from twisted.internet import reactor, protocol
 
+# Veil imports
+from modules.common import controller
+from modules.common import messages
+from modules.common import supportfiles
+from config import veil
 
 
 ### Channel
@@ -88,7 +93,7 @@ class Veilbot(irc.IRCClient):
             dbConn.close()
             create_tables()
 
-    def config(self, filename="veilbot.cfg"):
+    def config(self, filename="config/veilbot.cfg"):
         ''' Load settings from config file '''
         logging.info('Loading config from: %s' % filename)
         config = ConfigParser.SafeConfigParser(self.defaults)
@@ -197,23 +202,39 @@ class Veilbot(irc.IRCClient):
             display_channel = channel
         self.msg(display_channel, message.encode('ascii', 'ignore'))
 
+    def userJoined(self, user, channel):
+        ''' New user joined the channel '''
+        if User.by_nick(nick) is None:
+            user = User(nick=user)
+            dbsession.add(user)
+            dbsession.flush()
+
     # Actual commands
-    def bind(self, user, channel, msg):
+    def bind(self, nick, channel, msg):
         ''' Create a bind shell '''
         pass
 
-    def reverse(self, user, channel, msg):
+    def reverse(self, nick, channel, msg):
         ''' Create a reverse shell '''
         pass
 
-    def history(self, user, channel, msg):
+    def history(self, nick, channel, msg):
         ''' Retrieve a user's history '''
-        pass
+        user = User.by_nick(user)
 
-    def help(self, user, channel, msg):
-        ''' Displays a helpful message '''
+    def help(self, nick, channel, msg):
+        ''' Displays a helpful message
+
+        --protocol https/http/tcp
+        !bind --lport 4545
+        !reverse --lport 4545 --lhost 192.168.1.1
+        '''
         self.display(user, channel, " > Commands: Veilbot ")
         self.display(user, channel, "-------------------------------------")
+        self.display(user, channel, "    !bind: Create a bind shell ")
+        self.display(user, channel, " !reverse: Create a reverse shell")
+        self.display(user, channel, " !history: View you previously generated shells")
+
 
 ### Factory
 class VeilbotFactory(protocol.ClientFactory):
@@ -246,33 +267,4 @@ if __name__ == '__main__':
         level=logging.INFO
     )
     factory = VeilbotFactory()
-    if 1 < len(sys.argv):
-        parser = ArgumentParser(
-            description="Veilbot.")
-        parser.add_argument("server",
-            metavar="SERVER",
-            help="IRC server to connect to.")
-        parser.add_argument("-p", "--port",
-            type=int,
-            default=6667,
-            dest='port',
-            help="Port number to connect to.")
-        parser.add_argument("-c", "--config",
-            metavar="CONFIG",
-            default="veilbot.cfg",
-            dest="configFilename",
-            help="Path to config file.")
-        args = parser.parse_args()   
-        factory.configFilename = args.configFilename
-        reactor.connectTCP(args.server, args.port, factory)
-    elif os.path.exists("veilbot.cfg"):
-        config = ConfigParser.SafeConfigParser({'port': '6667'})
-        config.readfp(open("veilbot.cfg", 'r'))
-        factory.configFilename = "veilbot.cfg"
-        server = config.get("Server", 'domain')
-        port = config.getint("Server", 'port')
-        reactor.connectTCP(server, port, factory)
-    else:
-        print 'No config file or args; see --help'
-        os._exit(1)
     reactor.run()

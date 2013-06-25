@@ -1,3 +1,7 @@
+# output
+output/*
+
+# Byte code
 *.py[co]
 
 # Packages
