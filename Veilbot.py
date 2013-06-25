@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 '''
---------------------
 @author: Moloch
 @copyright: GPLv3
 @version: 0.1
---------------------
+
+An IRC bot that automatically generates av-resistant 
+meterpreter backdoors.
+
 '''
 
 

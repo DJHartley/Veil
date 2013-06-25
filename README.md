@@ -1,6 +1,6 @@
 #Veilbot
 
-An IRC bot that generates backdoors/payloads on your behalf
+An IRC bot that automatically generates av-resistant meterpreter backdoors.
 
 By Moloch
 @littlejoetables
