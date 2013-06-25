@@ -48,8 +48,8 @@ else
 	# Remove Temp Directories
 	rm -rf distutils
 	rm -rf tcl
-	rm -rf Tools
-	rm -rf ../setup
+	#rm -rf Tools
+	#rm -rf ../setup
 
 fi
 # run ./config/update.py
