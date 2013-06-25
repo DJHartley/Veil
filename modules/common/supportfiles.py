@@ -82,7 +82,7 @@ def supportingFiles(language, payloadFile, options):
                 
                 outputPath = veil.PAYLOAD_COMPILED_PATH
                 # TODO: os.system() is depreciated, use subprocess or commands instead
-                os.system('wine '+HOME+'/.wine/drive_c/Python27/python.exe /root/pyinstaller-2.0/pyinstaller.py --noconsole --onefile ' + payloadFile )
+                os.system('wine '+HOME+'/.wine/drive_c/Python27/python.exe '+HOME+'/pyinstaller-2.0/pyinstaller.py --noconsole --onefile ' + payloadFile )
                 os.system('mv dist/'+exeName+' ' + veil.PAYLOAD_COMPILED_PATH)
                 os.system('rm -rf dist')
                 os.system('rm -rf build')
