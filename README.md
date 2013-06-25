@@ -1,3 +1,11 @@
+#Veilbot
+
+An IRC bot that generates backdoors/payloads on your behalf
+
+By Moloch
+@littlejoetables
+
+
 #Veil
 
 Veil is a tool designed to generate metasploit payloads that bypass common anti-virus solutions.
