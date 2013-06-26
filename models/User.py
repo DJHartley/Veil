@@ -8,6 +8,7 @@ Created on Mar 12, 2012
 
 from models import dbsession
 from sqlalchemy import Column, or_
+from sqlalchemy.orm import relationship, backref
 from sqlalchemy.types import String
 from models.BaseObject import BaseObject
 
@@ -27,3 +28,6 @@ class User(BaseObject):
     @classmethod
     def by_nick(cls, nick):
         return dbsession.query(cls).filter_by(nick=nick).first()
+
+    def __str__(self):
+        return self.nick

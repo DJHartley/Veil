@@ -33,7 +33,6 @@ if __name__ == '__main__':
         parser.add_argument('--msfoptions', metavar="OPTION=value", nargs='*', help='Options for the specified metasploit payload.')
         parser.add_argument('--custshell', metavar="\\x00...", help='Custom shellcode string to use.')
         args = parser.parse_args()
-        
         # Print main title
         messages.title()
 

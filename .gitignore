@@ -1,6 +1,9 @@
 # output
 output/*
 
+# Databases
+*.db
+
 # Byte code
 *.py[co]
 

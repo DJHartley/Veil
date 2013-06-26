@@ -21,6 +21,7 @@ def supportingFiles(language, payloadFile, options):
     
     options['method'] = "py2exe" or "pyinstaller" currently for python payloads
     """
+    exe_path = ''
     if language == "python":
         
         # if we aren't passed any options, do the interactive menu
@@ -91,12 +92,12 @@ def supportingFiles(language, payloadFile, options):
                 
                 messages.title()
                 print "\n [*] Executable written to: " +  helpers.color(veil.PAYLOAD_COMPILED_PATH + exeName)
-                
+                exe_path = veil.PAYLOAD_COMPILED_PATH + exeName
             else:
                 messages.title()
                 print helpers.color("\n [!] ERROR: Can't find python.exe in "+HOME+"/.wine/drive_c/Python27", warning=True)
                 print helpers.color(" [!] ERROR: Make sure the python.exe binary exists before using PyInstaller.", warning=True)
-                sys.exit()
+
 
     elif language == "c":
 
@@ -108,7 +109,8 @@ def supportingFiles(language, payloadFile, options):
         os.system('i686-w64-mingw32-gcc -Wl,-subsystem,windows '+payloadFile+' -o ' + veil.PAYLOAD_COMPILED_PATH + exeName)
         
         print "\n [*] Executable written to: " +  helpers.color(veil.PAYLOAD_COMPILED_PATH + exeName)
-
+        exe_path = veil.PAYLOAD_COMPILED_PATH + exeName
+        
     elif language == "c#":
         
         # extract the payload base name and turn it into an .exe
@@ -119,10 +121,12 @@ def supportingFiles(language, payloadFile, options):
         os.system('mcs -platform:x86 -target:winexe '+payloadFile+' -out:' + veil.PAYLOAD_COMPILED_PATH + exeName)
         
         print "\n [*] Executable written to: " +  helpers.color(veil.PAYLOAD_COMPILED_PATH + exeName)
-        
+        exe_path = veil.PAYLOAD_COMPILED_PATH + exeName
 
     else:
         messages.title()
         print helpers.color("\n [!] ERROR: Only python, c, and c# compiling is currently supported.\n", warning=True)
+
+    return exe_path
 
             

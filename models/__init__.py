@@ -25,7 +25,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from models.BaseObject import BaseObject
 
-DBFILE_NAME = 'btsyncbot.db'
+DBFILE_NAME = 'veilbot.db'
 
 metadata = BaseObject.metadata
 
