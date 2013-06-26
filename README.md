@@ -5,6 +5,14 @@ An IRC bot that automatically generates av-resistant meterpreter backdoors.
 By Moloch
 @littlejoetables
 
+Edit config/veilbot.cfg
+
+Commands
+---------
+!reverse --lhost [--lport|--cryptor]
+!bind --lport [--cryptor]
+!history
+!help
 
 #Veil
 
