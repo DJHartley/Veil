@@ -160,6 +160,10 @@ class Veilbot(irc.IRCClient):
         logging.info('Config system bot nickname (%s)' % self.nickname)
         self.realname = config.get("System", 'realname')
         logging.info('Config system bot realname (%s)' % self.realname)
+        self.dropbox_lpath = config.get("Dropbox", 'share_url')
+        self.dropbox_lpath = config.get("Dropbox", 'dropbox_lpath')
+        if self.dropbox_lpath.endswith('/'):
+            self.dropbox_lpath = self.dropbox_lpath[:-1]
         self.share_url = config.get("Dropbox", 'share_url')
         self.share_lpath = config.get("Dropbox", 'share_lpath')
         if self.share_lpath.endswith('/'):
@@ -314,7 +318,6 @@ class Veilbot(irc.IRCClient):
             self.display(user, channel, "Generating payload, please wait ...")
             # Flush buffers?
             file_path = self.__generate__(msfpayload, msfoptions, cryptor)
-            print 'GOT:', file_path
             url = self.__dropbox__(user, file_path)
             self.display(user, channel, "Shell Download: %s" % (url,))
         except ValueError as error:
@@ -336,7 +339,7 @@ class Veilbot(irc.IRCClient):
         options = {}
         options['msfvenom'] = [msfpayload, msfoptions]
         controller.SetPayload(language, cryptor, options)
-        file_name = "irc_veil"
+        file_name = "veil"
         file_path = controller.OutputMenu(
             controller.payload, 
             controller.GeneratePayload(), 
@@ -349,8 +352,8 @@ class Veilbot(irc.IRCClient):
     def __dropbox__(self, user, output):
         ''' Get public dropbox link '''
         file_name = os.path.basename(output)
-        extension = '/'+ user.uuid + '/'
-        dst_path = self.share_lpath + extension
+        extension = self.share_lpath +'/'+ user.uuid + '/'
+        dst_path = self.dropbox_lpath + '/' + extension
         if not os.path.exists(dst_path):
             logging.debug("Mkdir: %s" % (dst_path))
             os.mkdir(dst_path)
