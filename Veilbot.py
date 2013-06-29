@@ -323,6 +323,9 @@ class Veilbot(irc.IRCClient):
                     'bind_' + args.protocol
                 )
                 url = self.__dropbox__(user, file_path)
+                self.__history__(user, args.lport, args.protocol,
+                    msfpayload, args.cryptor, url,
+                )
                 self.display(user, channel, "Shell Download: %s" % (url,))
         except ValueError as error:
             self.display(user, channel, "Error: %s" % error)
@@ -370,6 +373,9 @@ class Veilbot(irc.IRCClient):
                     'reverse_' + args.protocol
                 )
                 url = self.__dropbox__(user, file_path)
+                self.__history__(user, args.lport, args.protocol, 
+                    msfpayload, args.cryptor, url, ip_address,
+                )
                 self.display(user, channel, "Shell Download: %s" % (url,))
         except ValueError as error:
             self.display(user, channel, "Error: %s" % error)
@@ -420,11 +426,28 @@ class Veilbot(irc.IRCClient):
             raise ValueError("Failed to generate payload")
         return self.share_url + extension + file_name
 
+    def __history__(self, user, lport, protocol, msfpayload,
+                    cryptor, url, ip_address="0.0.0.0"):
+        ''' Save a payload to a user's history '''
+        payload = Payload(
+            user_id=user.id,
+            lhost=ip_address,
+            lport=lport,
+            msfpayload=msfpayload,
+            url=url,
+            protocol=protocol,
+            cryptor=cryptor,
+        )
+        user.history.append(payload)
+        dbsession.add(payload)
+        dbsession.add(user)
+        dbsession.flush()
+
     def history(self, user, channel, msg):
         ''' Retrieve a user's history '''
         if 0 < len(user.history):
-            for payload in user.history:
-                pass
+            for index, payload in enumerate(user.history[-5:]):
+                self.display(user, channel, "(" + str(index + 1) + ") " + str(payload))
         else:
             self.display(user, channel, "No history for '%s'" % user)
 

