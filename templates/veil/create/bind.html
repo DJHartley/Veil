@@ -20,9 +20,29 @@
                 {% raw xsrf_form_html() %}
                 <legend>Bind Shell</legend>
                 <div class="control-group">
-                    <label class="control-label" for="account">Account Name</label>
+                    <label class="control-label" for="lport">Listen Port</label>
                     <div class="controls">
-                        <input autofocus required name="account" id="account" placeholder="Account Name" type="text"/>
+                        <input required pattern="^[0-9]{1,6}$" name="lport" id="lport" placeholder="Listen Port" value="4444" type="text"/>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label" for="protocol">Protocol</label>
+                    <div class="controls">
+                        <select name="protocol">
+                            {% for proto in protocols %}
+                                <option name="{{ proto }}">{{ proto }}</option>
+                            {% end %}
+                        </select>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label" for="cryptor">Cryptor</label>
+                    <div class="controls">
+                        <select name="cryptor">
+                            {% for crypt in cryptors %}
+                                <option name="{{ crypt }}">{{ crypt }}</option>
+                            {% end %}
+                        </select>
                     </div>
                 </div>
                 <div class="control-group">

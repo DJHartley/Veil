@@ -84,17 +84,38 @@ class CreatePayloadHandler(BaseHandler):
             cryptor = self.get_argument('cryptor', None)
             if not cryptor in self.cryptors:
                 raise ValueError("Invalid cryptor")
+            payload = self.create_payload(lport, msfpayload, protocol, cryptor, lhost)
+            self.generate("reverse_" + protocol, payload)
+            self.redirect('/history?uuid=' + payload.uuid)
         except ValueError as error:
             errors = [str(error)]
             self.render_page('veil/create/reverse.html', errors)
-        payload = self.create_payload(lhost, lport, msfpayload, protocol, cryptor)
-        self.generate("reverse_" + protocol, payload)
-        self.redirect('/history?uuid=' + payload.uuid)
 
     def create_bind(self):
-        pass
+        ''' Validate arguments for a bind shell '''
+        msfpayload = 'windows/meterpreter/bind_'
+        try:
+            # LPORT
+            port = self.get_argument('lport', None)
+            lport = self.validate_port(port)
+            # Protocol
+            protocol = self.get_argument('protocol', None)
+            if not protocol in self.protocols:
+                raise ValueError("Invalid protocol")
+            msfpayload += protocol
+            # Cryptor
+            cryptor = self.get_argument('cryptor', None)
+            if not cryptor in self.cryptors:
+                raise ValueError("Invalid cryptor")
+            # Create Payload
+            payload = self.create_payload(lport, msfpayload, protocol, cryptor)
+            self.generate("bind_" + protocol, payload)
+            self.redirect('/history?uuid=' + payload.uuid)
+        except ValueError as error:
+            errors = [str(error)]
+            self.render_page('veil/create/bind.html', errors)
 
-    def create_payload(self, lhost, lport, msfpayload, protocol, cryptor):
+    def create_payload(self, lport, msfpayload, protocol, cryptor, lhost="0.0.0.0"):
         ''' Save new payload in database '''
         user = self.get_current_user()
         payload = Payload(
@@ -151,9 +172,9 @@ class CreatePayloadHandler(BaseHandler):
     def validate_port(self, port):
         ''' Validate we got a real port number '''
         try:
-            return 1 < int(port) < 65535
+            return int(port) if 1 < int(port) < 65535 else 4444
         except:
-            return False
+            return 4444
 
 
 class HistoryHandler(BaseHandler):
