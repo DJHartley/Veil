@@ -1,0 +1,59 @@
+{% extends "../main.html" %}
+
+{% block title %}Registration{% end %}
+
+{% block content %}
+    <div class="container">
+        <h1>Registration</h1>
+        <br />
+        {% if errors is not None and len(errors) != 0 %}
+            {% for error in errors %}
+                <div class="alert alert-error">
+                    <a class="close" data-dismiss="alert" href="#">×</a>
+                    <h4 class="alert-heading">ERROR</h4>
+                    {{ error }}
+                </div>
+            {% end %}
+        {% end %}
+        <div class="well">
+            <legend>Welcome to the Scene</legend>
+            <form class="form-horizontal" rel="persist" action="/registration" method="post">  
+                {% raw xsrf_form_html() %}
+                <div class="control-group">
+                    <label class="control-label" for="account">Account Name</label>
+                    <div class="controls">
+                        <input autofocus required id="account" name="username" placeholder="Account Name" type="text"
+                            rel="popover" pattern="^[a-zA-Z0-9 ]{3,15}$"
+                            data-original-title="Account Selection"
+                            data-content="Your account name must be 3-15 alpha-numeric characters" />
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label" for="pass1">Password</label>
+                    <div class="controls">
+                        <input required id="pass1" name="pass1" placeholder="Password" type="password" 
+                            autocomplete="off" data-storage="false"
+                            rel="popover"
+                            data-original-title="Password"
+                            data-content="Your password much contain only ascii chars" />
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label" for="pass2">Confirm Password</label>
+                    <div class="controls">
+                        <input required id="pass2" name="pass2" placeholder="Confirm Password" type="password" 
+                            autocomplete="off" data-storage="false"
+                            rel="popover"
+                            data-original-title="Confirm Password"
+                            data-content="Enter the same password as before" />
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="controls">
+                        <button class="btn btn-primary" type="submit">&nbsp;Register Account&nbsp;</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+{% end %}

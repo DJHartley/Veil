@@ -19,7 +19,7 @@ import logging
 import sqlite3
 import ConfigParser
 
-from models import dbsession, create_tables, \
+from irc_models import dbsession, create_tables, \
     User, Payload, DBFILE_NAME
 from argparse import ArgumentParser
 from twisted.application import internet

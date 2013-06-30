@@ -25,7 +25,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from models.BaseObject import BaseObject
 
-DBFILE_NAME = 'veilbot.db'
+DBFILE_NAME = 'veilweb.db'
 
 metadata = BaseObject.metadata
 
@@ -39,6 +39,9 @@ dbsession = Session(autoflush=True)
 # Import models (or the tables won't get created)
 from models.User import User
 from models.Payload import Payload
+from models.Permission import Permission
 
 # Calling this will create the tables at the database
 create_tables = lambda: (setattr(engine, 'echo', True), metadata.create_all(engine))
+def boot_strap():
+    import setup.bootstrap

@@ -1,0 +1,62 @@
+{% extends "../../main.html" %}
+
+{% block title %}Create Reverse Shell{% end %}
+
+{% block content %}
+    <div class="container">
+        <h1>Create Payload</h1>
+        <br />
+        {% if errors is not None and len(errors) != 0 %}
+            {% for error in errors %}
+                <div class="alert alert-error">
+                    <a class="close" data-dismiss="alert" href="#">×</a>
+                    <h4 class="alert-heading">ERROR</h4>
+                    {{ error }}
+                </div>
+            {% end %}
+        {% end %}
+        <div class="well">
+            <form class="form-horizontal" action="/create/reverse" method="post" autocomplete="off">  
+                {% raw xsrf_form_html() %}
+                <legend>Reverse Shell</legend>
+                <div class="control-group">
+                    <label class="control-label" for="lhost">Listener</label>
+                    <div class="controls">
+                        <input autofocus required name="lhost" id="lhost" placeholder="Listener Address" type="text"/>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label" for="lport">Listen Port</label>
+                    <div class="controls">
+                        <input required pattern="^[0-9]{1,6}$" name="lport" id="lport" placeholder="Listen Port" value="4444" type="text"/>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label" for="protocol">Protocol</label>
+                    <div class="controls">
+                        <select name="protocol">
+                            {% for proto in protocols %}
+                                <option name="{{ proto }}">{{ proto }}</option>
+                            {% end %}
+                        </select>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label" for="cryptor">Cryptor</label>
+                    <div class="controls">
+                        <select name="cryptor">
+                            {% for crypt in cryptors %}
+                                <option name="{{ crypt }}">{{ crypt }}</option>
+                            {% end %}
+                        </select>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="controls">
+                        <button class="btn btn-primary" type="submit">Generate</button>
+                    </div>
+                </div>
+          </form>
+        </div>
+    </div>
+{% end %}

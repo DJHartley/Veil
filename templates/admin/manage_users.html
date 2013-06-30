@@ -1,0 +1,64 @@
+{% extends "../main.html" %}
+
+{% block title %}Manage Users{% end %}
+
+{% block content %}
+    <script>
+        function toggle_lock(uuid) {
+            document.getElementById("lock_uuid").value = uuid;
+            document.getElementById("lock_form").submit();
+        }
+    </script>
+    <form id="lock_form" action="/admin" method="post">
+        {% raw xsrf_form_html() %}
+        <input id="lock_uuid" name="uuid" type="hidden" />
+    </form>
+    <!-- Start Visable -->
+    <div class="row-fluid">
+        <div class="span10 offset1">
+            <h1>Users</h1>
+            <br />
+            <div class="well">
+                <br />
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Shells</th>
+                            <th>Lock Status</th>
+                            <th><!-- button --></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% from models.User import User %}
+                        {% for user in User.all_users() %}
+                            <tr>
+                                <td>{{ user.name }}</td>
+                                <td>{{ len(user.history) }}</td>
+                                    {% if user.locked %}
+                                        <td>Locked</td>
+                                        <td>
+                                            <a id="{{ 'lock_button_' + user.uuid }}"
+                                            class="btn btn-mini btn-success"
+                                            onclick="toggle_lock('{{ user.uuid }}')">
+                                                Unlock Account
+                                            </a>
+                                        </td>
+                                    {% else %}
+                                        <td>Unlocked</td>
+                                        <td>
+                                            <a id="{{ 'lock_button_' + user.uuid }}"
+                                            class="btn btn-mini btn-danger"
+                                            onclick="toggle_lock('{{ user.uuid }}')">
+                                                Lock Account
+                                            </a>
+                                        </td>
+                                    {% end %}
+                            </tr>
+                        {% end %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% end %}

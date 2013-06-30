@@ -1,0 +1,45 @@
+{% extends "../main.html" %}
+
+{% block title %}Payload History{% end %}
+
+{% block content %}
+    <!-- Start Visable -->
+    <div class="container">
+            <h1>Payloads</h1>
+            <br />
+            <div class="well">
+                <br />
+                {% if len(payloads) == 0 %}
+                    <center>No Payloads Found</center>
+                    <br />
+                {% else %}
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Created</th>
+                                <th>Listen Host</th>
+                                <th>Listen Port</th>
+                                <th>Protocol</th>
+                                <th>Cryptor</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payload in payloads %}
+                                <tr>
+                                    <td>
+                                        <a href="/history?uuid={{ payload.uuid }}">
+                                            {{ payload.created }}
+                                        </a>
+                                    </td>
+                                    <td>{{ payload.lhost }}</td>
+                                    <td>{{ payload.lport }}</td>
+                                    <td>{{ payload.protocol }}</td>
+                                    <td>{{ payload.cryptor }}</td>
+                                </tr>
+                            {% end %}
+                        </tbody>
+                    </table>
+                {% end %}
+            </div>
+    </div>
+{% end %}

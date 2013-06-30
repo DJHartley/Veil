@@ -5,6 +5,7 @@ Created on Mar 12, 2012
 @author: moloch
 '''
 
+import os
 
 from models import dbsession
 from sqlalchemy import Column, ForeignKey
@@ -19,10 +20,10 @@ class Payload(BaseObject):
         ForeignKey('user.id'), 
         nullable=False
     )
+    file_path = Column(String(1024))
     lhost = Column(String(256), default="0.0.0.0")
     lport = Column(Integer, default=4444)
     msfpayload = Column(String(256))
-    url = Column(String(256))
     protocol = Column(String(32))
     cryptor = Column(String(32))
 
@@ -30,25 +31,32 @@ class Payload(BaseObject):
     def by_id(cls, sid):
         return dbsession.query(cls).filter_by(id=sid).first()
 
+    @classmethod
+    def by_uuid(cls, sid):
+        return dbsession.query(cls).filter_by(uuid=sid).first()
+
     @property
     def msfoptions(self):
         _msfoptions = []
         _msfoptions.append("LHOST=%s" % self.lhost)
-        _msfoptions.append("LPORT=%d" % self.port)
+        _msfoptions.append("LPORT=%d" % self.lport)
         return _msfoptions
 
-    def generate_rc_file(self):
-        return '''
-use exploit/multi/handler
-set PAYLOAD %s
-set LHOST %s
-set LPORT %d
-set ExitOnSession false
-exploit %s
-''' % (self.msfpayload, self.lhost, self.lport, self.exec_job())
-    
-    def exec_job(self):
-        return '-j' if 'reverse' in self.msfpayload else ''
+    @property
+    def file_name(self):
+        return os.path.basename(self.file_path)
+
+    def write_rc_file(self, fout):
+        ''' Create an rc file that starts the msf handler '''
+        fout.write('use exploit/multi/handler\n')
+        fout.write('set PAYLOAD %s\n' % self.msfpayload)
+        fout.write('set LHOST %s\n' % self.lhost)
+        fout.write('set LPORT %d\n' % self.lport)
+        if 'reverse' in self.msfpayload:
+            fout.write('set ExitOnSession false\n')
+            fout.write('exploit -j\n\n')
+        else:
+            fout.write('exploit\n\n')
 
     def __str__(self):
     	return "Created: %s | MSFPayload: %s | Port: %d | Download: %s" % (

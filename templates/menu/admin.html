@@ -1,0 +1,56 @@
+<div class="navbar navbar-fixed-top">
+    <div class="navbar-inner">
+        <div class="container-fluid">
+            <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </a>
+            <a class="brand" href="/">
+                Veil
+            </a>
+            <div class="nav-collapse">
+                <ul class="nav">
+                    <li>
+                        <a href="/admin">Manage Users</a>
+                    </li>
+                    <li>
+                        <a href="/about">About</a>
+                    </li>
+                </ul>
+            </div><!--/.nav-collapse -->
+            <!-- Right Side -->
+            <div class="btn-group pull-right">
+                <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
+                    <i class="icon-user"></i>
+                    {{ user.name }}
+                    <span class="caret"></span>
+                </a>
+                <ul class="dropdown-menu">
+                    <li>
+                        <a href="/user/settings">
+                            <i class="icon-pencil"></i>
+                            &nbsp;Settings&nbsp;
+                        </a>
+                    </li>
+                    <li class="divider"></li>
+                    <li>
+                        <!-- logout form -->
+                        <form id="logoutform" action="/logout" method="post">
+                            {% raw xsrf_form_html() %}
+                        </form>
+                        <script>
+                            function logout() {
+                                document.getElementById("logoutform").submit();
+                            }
+                        </script>
+                        <a onclick="logout()">
+                            <i class="icon-ban-circle"></i>
+                            &nbsp;Logout&nbsp;
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>

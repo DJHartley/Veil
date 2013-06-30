@@ -1,0 +1,14 @@
+{% extends "../main.html" %}
+
+{% block title %} About {% end %}
+
+
+{% block content %}
+	<div class="container">
+		<h1>About v{{ handler.application.settings['version'] }}</h1>
+		<br />
+		<div class="well">
+			Veil Web Interface.
+		</div>
+	</div>
+{% end %}
