@@ -186,14 +186,56 @@ class HistoryHandler(BaseHandler):
         if uuid is not None:
             payload = Payload.by_uuid(uuid)
             if payload is not None and payload in user.history:
-                self.render('history/view.html', payloads=[payload])
+                self.render('history/view_payload.html', payload=payload)
         else:
-            self.render('history/view.html', payloads=user.history)
+            self.render('history/view_table.html', payloads=user.history)
 
 
 class DownloadHandler(BaseHandler):
 
     @authenticated
     def get(self, *args, **kwargs):
-        pass
+        if 0 < len(args):
+            if args[0] == 'exe':
+                self.download_exe()
+            elif args[0] == 'rc':
+                self.download_rc()
+            else:
+                self.redirect('/404')
+        else:
+            self.redirect('/404')
+
+    def download_exe(self):
+        user = self.get_current_user()
+        uuid = self.get_argument('uuid', '')
+        payload = Payload.by_uuid(uuid)
+        if payload is not None and payload in user.history:
+            f = open(payload.file_path, 'r')
+            data = f.read()
+            self.set_header('Content-Type', 'application/x-msdos-program')
+            self.set_header('Content-Length', len(data))
+            self.set_header('Content-Disposition', 'attachment; filename=%s' %
+                payload.file_name.replace('\n', '')  # Shouldn't be any
+            )
+            self.write(data)
+            f.close()
+            self.finish()
+        else:
+            self.render('public/404.html')
+
+    def download_rc(self):
+        user = self.get_current_user()
+        uuid = self.get_argument('uuid', '')
+        payload = Payload.by_uuid(uuid)
+        if payload is not None and payload in user.history:
+            data = payload.get_rc_file()
+            self.set_header('Content-Type', 'text/plain')
+            self.set_header('Content-Length', len(data))
+            self.set_header('Content-Disposition', 'attachment; filename=%s' %
+                payload.rc_file_name.replace('\n', '')  # Shouldn't be any
+            )
+            self.write(data)
+            self.finish()
+        else:
+            self.render('public/404.html')
 

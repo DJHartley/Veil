@@ -20,7 +20,8 @@
                                 <th>Listen Host</th>
                                 <th>Listen Port</th>
                                 <th>Protocol</th>
-                                <th>Cryptor</th>
+                                <th><!-- Download Exe --></th>
+                                <th><!-- Download RC --></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -34,7 +35,22 @@
                                     <td>{{ payload.lhost }}</td>
                                     <td>{{ payload.lport }}</td>
                                     <td>{{ payload.protocol }}</td>
-                                    <td>{{ payload.cryptor }}</td>
+                                    <td>
+                                        <a
+                                        class="btn btn-mini btn-danger"
+                                        target="_blank"
+                                        href="/download/exe?uuid={{ payload.uuid }}">
+                                            Download Exe
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <a 
+                                        class="btn btn-mini btn-warning"
+                                        target="_blank"
+                                        href="/download/rc?uuid={{ payload.uuid }}">
+                                            Download RC
+                                        </a>
+                                    </td>
                                 </tr>
                             {% end %}
                         </tbody>

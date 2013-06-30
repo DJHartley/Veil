@@ -54,6 +54,7 @@ app = Application(
         # Veil Handlers - VeilHandlers.py
         (r'/create/(bind|reverse)', CreatePayloadHandler),
         (r'/history(.*)', HistoryHandler),
+        (r'/download/(exe|rc)', DownloadHandler),
 
         # Public handlers - PublicHandlers.py
         (r'/login', LoginHandler),

