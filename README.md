@@ -1,21 +1,23 @@
-#Veilbot
+# Veilweb/Veilbot
 
 An IRC bot that automatically generates av-resistant meterpreter backdoors.
 
 By Moloch
 @littlejoetables
 
-Edit config/veilbot.cfg
+#Veilweb (Web Interface)
 
-Commands
----------
-!reverse --lhost [--lport | --cryptor]
+* Run __setup/web_setup.sh__ and then __setup/python_setup.sh__
+* Edit __config/veilweb.cfg__ to your liking
+* Run __Veilweb.py --create-tables__ to intial the database (do this once)
+* Run __Veilweb.py --start__ to start the server 
 
-!bind --lport [--cryptor]
+#Veilbot (IRC Bot)
 
-!history
-
-!help
+* Run __setup/irc_setup__ and then __setup/python_setup.sh__
+* Edit __config/veilbot.cfg__
+* Run __Veilbot.py__
+* See !help
 
 #Veil
 
