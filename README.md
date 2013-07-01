@@ -12,6 +12,8 @@ By Moloch
 * Run __Veilweb.py --create-tables__ to intial the database (do this once)
 * Run __Veilweb.py --start__ to start the server 
 
+[Screenshot](http://i.imgur.com/cOeXjsG.jpg)
+
 #Veilbot (IRC Bot)
 
 * Run __setup/irc_setup__ and then __setup/python_setup.sh__
