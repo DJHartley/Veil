@@ -16,6 +16,7 @@
                     <table class="table table-striped">
                         <thead>
                             <tr>
+                                <th>#</th>
                                 <th>Created</th>
                                 <th>Listen Host</th>
                                 <th>Listen Port</th>
@@ -25,28 +26,41 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for payload in payloads %}
+                            {% for index, payload in enumerate(payloads) %}
                                 <tr>
+                                    <td>
+                                        <a href="/history?uuid={{ payload.uuid }}">
+                                            {{ index + 1 }}
+                                        </a>
+                                    </td>
                                     <td>
                                         <a href="/history?uuid={{ payload.uuid }}">
                                             {{ payload.created }}
                                         </a>
                                     </td>
-                                    <td>{{ payload.lhost }}</td>
-                                    <td>{{ payload.lport }}</td>
-                                    <td>{{ payload.protocol }}</td>
                                     <td>
-                                        <a
-                                        class="btn btn-mini btn-danger"
-                                        target="_blank"
+                                        <a href="/history?uuid={{ payload.uuid }}">
+                                            {{ payload.lhost }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <a href="/history?uuid={{ payload.uuid }}">
+                                            {{ payload.lport }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <a href="/history?uuid={{ payload.uuid }}">
+                                            {{ payload.protocol }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <a class="btn btn-mini btn-success" target="_blank"
                                         href="/download/exe?uuid={{ payload.uuid }}">
                                             Download Exe
                                         </a>
                                     </td>
                                     <td>
-                                        <a 
-                                        class="btn btn-mini btn-warning"
-                                        target="_blank"
+                                        <a class="btn btn-mini btn-warning" target="_blank"
                                         href="/download/rc?uuid={{ payload.uuid }}">
                                             Download RC
                                         </a>

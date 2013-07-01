@@ -1,10 +1,10 @@
 {% extends "../main.html" %}
 
-{% block title %}Registration{% end %}
+{% block title %}Settings{% end %}
 
 {% block content %}
     <div class="container">
-        <h1>Registration</h1>
+        <h1>Settings</h1>
         <br />
         {% if errors is not None and len(errors) != 0 %}
             {% for error in errors %}
@@ -16,33 +16,30 @@
             {% end %}
         {% end %}
         <div class="well">
-            <legend>Welcome to Veil</legend>
-            <form class="form-horizontal" rel="persist" action="/registration" method="post">  
+            <legend>Change Password</legend>
+            <form class="form-horizontal" action="/settings" method="post" autocomplete="off">  
                 {% raw xsrf_form_html() %}
                 <div class="control-group">
-                    <label class="control-label" for="account">Account Name</label>
+                    <label class="control-label" for="old_password">Current Password</label>
                     <div class="controls">
-                        <input autofocus required id="account" name="username" placeholder="Account Name" type="text"
-                            pattern="^[a-zA-Z0-9 ]{3,15}$" />
+                        <input required id="old_password" name="old_password" placeholder="Password" type="password" />
                     </div>
                 </div>
                 <div class="control-group">
                     <label class="control-label" for="pass1">Password</label>
                     <div class="controls">
-                        <input required id="pass1" name="pass1" placeholder="Password" type="password" 
-                            autocomplete="off" />
+                        <input required id="pass1" name="pass1" placeholder="New Password" type="password" />
                     </div>
                 </div>
                 <div class="control-group">
                     <label class="control-label" for="pass2">Confirm Password</label>
                     <div class="controls">
-                        <input required id="pass2" name="pass2" placeholder="Confirm Password" type="password" 
-                            autocomplete="off" />
+                        <input required id="pass2" name="pass2" placeholder="Confirm New Password" type="password" />
                     </div>
                 </div>
                 <div class="control-group">
                     <div class="controls">
-                        <button class="btn btn-primary" type="submit">&nbsp;Register Account&nbsp;</button>
+                        <button class="btn btn-primary" type="submit">&nbsp;Update Account&nbsp;</button>
                     </div>
                 </div>
             </form>

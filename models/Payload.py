@@ -44,11 +44,21 @@ class Payload(BaseObject):
 
     @property
     def file_name(self):
-        return os.path.basename(self.file_path)
+        return os.path.basename(str(self.file_path))
 
     @property
     def rc_file_name(self):
         return self.file_name.replace('.exe', '.rc')
+
+    @property
+    def size(self):
+        if self.file_path is not None and os.path.exists(self.file_path):
+            f = open(self.file_path, 'r')
+            _size = len(f.read())
+            f.close()
+            return _size
+        else:
+            return 0
 
     def get_rc_file(self):
         ''' Create an rc file that starts the msf handler '''

@@ -4,14 +4,49 @@
 
 {% block content %}
     <!-- Start Visable -->
+    <form id="delete_form" action="/delete" method="post">
+        <input id="payload_uuid" name="uuid" value="" type="hidden">
+        {% raw xsrf_form_html() %}
+    </form>
+    <script>
+        function deletePayload(uuid) {
+            document.getElementById("payload_uuid").value = uuid;
+            document.getElementById("delete_form").submit();
+        }
+    </script>
     <div class="container">
         <h1>Payload</h1>
         <br />
         <div class="well">
-        	foo
+        	<strong>Listen Address: </strong> {{ payload.lhost }} <br />
+            <strong>Listen Port: </strong> {{ payload.lport }} <br />
+            <strong>Protocol: </strong> {{ payload.protocol }} <br />
+            <strong>MSFPayload: </strong> {{ payload.msfpayload }} <br />
+            <strong>Cryptor: </strong> {{ payload.cryptor }} <br />
+            <strong>File name: </strong> {{ payload.file_name }} <br />
+            <strong>Size: </strong> {{ payload.size / 1000.0 }}Kb <br />
         </div>
-        <a class="btn btn-success" href="/history">
-            &laquo; Back
-        </a>
+        <div class="row" >
+            <div class="span4">
+                <a class="btn btn-inverse" href="/history">
+                    &laquo; Back
+                </a>
+            </div>
+            <div class="span2">
+                <a class="btn btn-success" target="_blank" href="/download/exe?uuid={{ payload.uuid }}">
+                    Download Exe
+                </a>
+            </div>
+            <div class="span5">
+                <a class="btn btn-warning" target="_blank" href="/download/rc?uuid={{ payload.uuid }}">
+                    Download RC
+                </a>
+            </div>
+            <div class="span1">
+                <a class="btn btn-danger" onclick="deletePayload('{{ payload.uuid }}')">
+                    Delete
+                </a>
+            </div>
+        </div>
     </div>
 {% end %}

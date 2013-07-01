@@ -239,3 +239,49 @@ class DownloadHandler(BaseHandler):
         else:
             self.render('public/404.html')
 
+class DeletePayloadHandler(BaseHandler):
+
+    @authenticated
+    def post(self, *args, **kwargs):
+        uuid = self.get_argument('uuid', '')
+        payload = Payload.by_uuid(uuid)
+        user = self.get_current_user()
+        if payload is not None and payload in user.history:
+            dbsession.delete(payload)
+            dbsession.flush()
+        self.redirect('/history')
+
+class SettingsHandler(BaseHandler):
+
+    @authenticated
+    def get(self, *args, **kwargs):
+        self.render('veil/settings.html', errors=[])
+
+    @authenticated
+    def post(self, *args, **kwargs):
+        ''' Change user password '''
+        user = self.get_current_user()
+        old_password = self.get_argument('old_password', None)
+        pass1 = self.get_argument('pass1', None)
+        pass2 = self.get_argument('pass2', None)
+        if old_password is None or pass1 is None or pass2 is None:
+            self.render('veil/settings.html', 
+                errors=['Fill in all the forms']
+            )
+        elif len(pass1) < 12 or len(pass2) < 12:
+            self.render('veil/settings.html', 
+                errors=['New password too short  (min. 12)']
+            )
+        elif pass1 != pass2:
+            self.render('veil/settings.html',
+                errors=['New passwords do not match']
+            )
+        elif user.validate_password(old_password):
+            user.password = pass1
+            dbsession.add(user)
+            dbsession.flush()
+            self.render('veil/settings.html', errors=[])
+        else:
+            self.render('veil/settings.html',
+                errors=['Old password incorrect']
+            )

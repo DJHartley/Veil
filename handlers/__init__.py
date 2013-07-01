@@ -55,6 +55,8 @@ app = Application(
         (r'/create/(bind|reverse)', CreatePayloadHandler),
         (r'/history(.*)', HistoryHandler),
         (r'/download/(exe|rc)', DownloadHandler),
+        (r'/delete', DeletePayloadHandler),
+        (r'/settings', SettingsHandler),
 
         # Public handlers - PublicHandlers.py
         (r'/login', LoginHandler),
