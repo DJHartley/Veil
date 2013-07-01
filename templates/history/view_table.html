@@ -18,6 +18,8 @@
                             <tr>
                                 <th>#</th>
                                 <th>Created</th>
+                                <th>Direction</th>
+                                <th>Remote Host</th>
                                 <th>Listen Host</th>
                                 <th>Listen Port</th>
                                 <th>Protocol</th>
@@ -35,7 +37,17 @@
                                     </td>
                                     <td>
                                         <a href="/history?uuid={{ payload.uuid }}">
-                                            {{ payload.created }}
+                                            {{ payload.created.strftime('%m/%d/%Y - %H:%M:%S') }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <a href="/history?uuid={{ payload.uuid }}">
+                                            {{ payload.direction }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <a href="/history?uuid={{ payload.uuid }}">
+                                            {{ payload.rhost }}
                                         </a>
                                     </td>
                                     <td>

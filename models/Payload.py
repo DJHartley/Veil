@@ -21,6 +21,7 @@ class Payload(BaseObject):
         nullable=False
     )
     file_path = Column(String(1024))
+    rhost = Column(String(256), default="0.0.0.0")
     lhost = Column(String(256), default="0.0.0.0")
     lport = Column(Integer, default=4444)
     msfpayload = Column(String(256))
@@ -51,6 +52,10 @@ class Payload(BaseObject):
         return self.file_name.replace('.exe', '.rc')
 
     @property
+    def direction(self):
+        return 'Bind' if 'bind' in self.msfpayload else 'Reverse' 
+
+    @property
     def size(self):
         if self.file_path is not None and os.path.exists(self.file_path):
             f = open(self.file_path, 'r')
@@ -61,18 +66,19 @@ class Payload(BaseObject):
             return 0
 
     def get_rc_file(self):
-        ''' Create an rc file that starts the msf handler '''
-        rc = '''
-use exploit/multi/handler
-set PAYLOAD %s
-set LHOST %s
-set LPORT %d
-''' % (self.msfpayload, self.lhost, self.lport)
+        ''' 
+        Create an rc file that starts the msf handler
+        '''
+        rc = 'use exploit/multi/handler\n'
+        rc += 'set PAYLOAD %s\n' % self.msfpayload
+        rc += 'set LPORT %d\n' % self.lport
         if 'reverse' in self.msfpayload:
+            rc += 'set LHOST %s\n' % self.lhost
             rc += 'set ExitOnSession false\n'
             rc += 'exploit -j\n\n'
         else:
-            rc += 'exploit\n\n'
+            rc += 'set RHOST %s\n' % self.rhost
+            rc += 'exploit -z\n\n'
         return rc
 
     def __str__(self):

@@ -20,7 +20,7 @@
                 {% raw xsrf_form_html() %}
                 <legend>Reverse Shell</legend>
                 <div class="control-group">
-                    <label class="control-label" for="lhost">Listener</label>
+                    <label class="control-label" for="lhost">Listen Host</label>
                     <div class="controls">
                         <input autofocus required name="lhost" id="lhost" placeholder="Listener Address" type="text"/>
                     </div>
@@ -35,7 +35,7 @@
                     <label class="control-label" for="protocol">Protocol</label>
                     <div class="controls">
                         <select name="protocol">
-                            {% for proto in protocols %}
+                            {% for proto in reverse_protocols %}
                                 <option name="{{ proto }}">{{ proto }}</option>
                             {% end %}
                         </select>

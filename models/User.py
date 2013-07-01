@@ -12,6 +12,7 @@ from pbkdf2 import PBKDF2
 from sqlalchemy import Column, or_
 from sqlalchemy.orm import relationship, backref, synonym
 from sqlalchemy.types import String, Boolean
+from models.Payload import Payload
 from models.BaseObject import BaseObject
 
 
@@ -71,6 +72,12 @@ class User(BaseObject):
     def _hash_password(cls, password, salt):
         ''' PBKDF2 hash of password '''
         return PBKDF2(password, salt, iterations=ITERATE).read(32).encode('hex')
+
+    @property
+    def chronological_history(self):
+        return dbsession.query(Payload).filter_by(
+            user_id=self.id
+        ).order_by(Payload.created.desc()).all()
 
     @property
     def permissions(self):

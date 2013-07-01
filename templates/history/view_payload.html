@@ -15,10 +15,13 @@
         }
     </script>
     <div class="container">
-        <h1>Payload</h1>
+        <h1>Payload Details</h1>
         <br />
         <div class="well">
-        	<strong>Listen Address: </strong> {{ payload.lhost }} <br />
+            <h4>{{ payload.direction }} Shell</h4>
+            <hr>
+            <strong>Remote Host: </strong> {{ payload.rhost }} <br />
+            <strong>Listen Host: </strong> {{ payload.lhost }} <br />
             <strong>Listen Port: </strong> {{ payload.lport }} <br />
             <strong>Protocol: </strong> {{ payload.protocol }} <br />
             <strong>MSFPayload: </strong> {{ payload.msfpayload }} <br />

