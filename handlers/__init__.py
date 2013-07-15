@@ -115,7 +115,6 @@ def start_server():
     server.add_sockets(sockets)
     io_loop = IOLoop.instance()
     try:
-        sys.stdout.write("\r" + INFO + "The game has begun, good hunting!\n")
         if config.debug:
             sys.stdout.write(WARN + "WARNING: Debug mode is enabled.\n")
         sys.stdout.flush()

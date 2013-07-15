@@ -5,6 +5,8 @@ Contains methods for creating any supporting files for payloads.
 
 import os
 import sys
+import logging
+
 from modules.common import shellcode
 from modules.common import messages
 from modules.common import helpers
@@ -91,7 +93,7 @@ def supportingFiles(language, payloadFile, options):
                 os.system('rm logdict*.*')
                 
                 messages.title()
-                print "\n [*] Executable written to: " +  helpers.color(veil.PAYLOAD_COMPILED_PATH + exeName)
+                logging.info("Executable written to: " +  helpers.color(veil.PAYLOAD_COMPILED_PATH + exeName))
                 exe_path = veil.PAYLOAD_COMPILED_PATH + exeName
             else:
                 messages.title()
@@ -108,7 +110,7 @@ def supportingFiles(language, payloadFile, options):
         # Compile our C code into an executable and pass a compiler flag to prevent it from opening a command prompt when run
         os.system('i686-w64-mingw32-gcc -Wl,-subsystem,windows '+payloadFile+' -o ' + veil.PAYLOAD_COMPILED_PATH + exeName)
         
-        print "\n [*] Executable written to: " +  helpers.color(veil.PAYLOAD_COMPILED_PATH + exeName)
+        logging.info("Executable written to: " +  helpers.color(veil.PAYLOAD_COMPILED_PATH + exeName))
         exe_path = veil.PAYLOAD_COMPILED_PATH + exeName
         
     elif language == "c#":
@@ -120,7 +122,7 @@ def supportingFiles(language, payloadFile, options):
         # Compile our C code into an executable and pass a compiler flag to prevent it from opening a command prompt when run
         os.system('mcs -platform:x86 -target:winexe '+payloadFile+' -out:' + veil.PAYLOAD_COMPILED_PATH + exeName)
         
-        print "\n [*] Executable written to: " +  helpers.color(veil.PAYLOAD_COMPILED_PATH + exeName)
+        logging.info("Executable written to: " +  helpers.color(veil.PAYLOAD_COMPILED_PATH + exeName))
         exe_path = veil.PAYLOAD_COMPILED_PATH + exeName
 
     else:

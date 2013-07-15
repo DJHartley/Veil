@@ -17,7 +17,7 @@ from models.BaseObject import BaseObject
 
 
 ### Constants
-ITERATE = 1337
+ITERATE = 31337
 ADMIN_PERMISSION = 'administrator'
 
 

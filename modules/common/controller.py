@@ -13,22 +13,19 @@ import re
 import socket
 import commands
 import time
+import logging
 
 try:
     from config import veil
 except ImportError:
-    os.system('clear')
-    print '========================================================================='
-    print ' Veil First Run Detected... Initializing Script Setup...'
-    print '========================================================================='
+    logging.info(' Veil First Run Detected... Initializing Script Setup...')
     # run the config if it hasn't been run
-    print '\n [*] Executing ./config/update.py...'
-    os.system('cd config && python update.py')
-    
+    logging.info('Executing ./config/update.py...')
+    os.system('cd config && python update.py') 
     try:
         from config import veil
     except ImportError:
-        print "\n [!] ERROR: run ./config/update.py manually\n"
+        logging.error("run ./config/update.py manually")
         sys.exit()
 
         
@@ -51,7 +48,7 @@ class Controller:
     """
     
     def __init__(self, langs = None):
-        self.payloads = list()
+        self.payloads = []
         # a specific payload, so we can set it manually
         self.payload = None
         # restrict loaded modules to specific languages
@@ -83,9 +80,9 @@ class Controller:
         """
 
         # TODO: detect Windows and modify the paths appropriately
-        d = dict((splitext(basename(path))[0], imp.load_source(splitext(basename(path))[0],path)) for path in glob.glob(join(veil.VEIL_PATH + "/modules/payloads/*/",'[!_]*.py')) )
-        for name in d.keys():
-            stager = d[name].Stager()
+        data = dict((splitext(basename(path))[0], imp.load_source(splitext(basename(path))[0],path)) for path in glob.glob(join(veil.VEIL_PATH + "/modules/payloads/*/",'[!_]*.py')) )
+        for name in data:
+            stager = data[name].Stager()
             # if specific languages to use are specified, only load those payload modules
             if self.langs:
                 if stager.language in self.langs:
@@ -101,41 +98,30 @@ class Controller:
         Prints out all available languages of loaded paylod modules.
         
         """
-        langs = list()
-        for (name, payload) in self.payloads: langs.append(payload.language)
-        print (" Available languages:\n")
-        for lang in set(langs): print "\t" + helpers.color(lang)
-        print ""
-        
-    
+        langs = []
+        for (name, payload) in self.payloads: 
+            langs.append(payload.language)
+        return set(langs)
+
     def ListPayloads(self, lang):
         """
         Prints out the available payloads for a specific language.
         
         lang = the language to list ("python"/"c"/etc.)
         """
-        print (" Available %s payloads:\n" % (helpers.color(lang)))
+        payloads = []
         for (name, payload) in self.payloads: 
-            if payload.language == lang: print "\t%s\t\t%s" % ('{0: <16}'.format(payload.shortname), payload.rating)
+            if payload.language == lang: 
+                payloads.append((name, payload,))
+        return payloads
 
     def ListAllPayloads(self):
         """
-        Prints out the name, language and rating of all loaded payloads.
-        
+        Prints out the name, language and rating of all loaded payloads. 
         """
-        
-        print " Available payloads:\n"
-        lastLang=None
+        lastLang = None
         x = 1
-        for (name, payload) in self.payloads:
-            # this is so we can space out languages
-            if lastLang and payload.language != lastLang:
-                print ""
-            lastLang = payload.language
-            print "\t%s)\t%s\t\t%s" % (x, '{0: <24}'.format(payload.language + "/" + payload.shortname), payload.rating)
-            x+=1
-        print ""
-    
+        return [(pay.name, pay.payload, pay.language) for pay in self.payloads]
     
     def PayloadInfo(self, payload, showTitle=True, showInfo=True):
         """
@@ -148,30 +134,28 @@ class Controller:
             messages.title()
         
         if showInfo:
-            print " Payload information:\n"
-            
-            print "\tName:\t\t" + payload.shortname
-            print "\tLanguage:\t" + payload.language
-            print "\tRating:\t\t" + payload.rating
+            logging.info("\tName:\t\t" + payload.shortname)
+            logging.info("\tLanguage:\t" + payload.language)
+            logging.info("\tRating:\t\t" + payload.rating)
             
             if hasattr(payload, 'shellcode'):
                 if self.payload.shellcode.customshellcode:
-                    print "\tShellcode:\t\tused"
+                    logging.info("\tShellcode:\t\tused")
 
-            print "\tDescription:\t" + payload.description
+            logging.info("\tDescription:\t" + payload.description)
         
         # if required options were specified, output them
         if hasattr(self.payload, 'required_options'):
-            print "\n Required Options:\n"
+            #print "\n Required Options:\n"
             
-            print " Name\t\t\tCurrent Value\tDescription"
-            print " ----\t\t\t-------------\t-----------"            
+            #print " Name\t\t\tCurrent Value\tDescription"
+            #print " ----\t\t\t-------------\t-----------"            
             
             # sort the dictionary by key before we output, so it looks nice
             for key in sorted(self.payload.required_options.iterkeys()):
-                print " %s\t%s\t%s" % ('{0: <16}'.format(key), '{0: <8}'.format(payload.required_options[key][0]), payload.required_options[key][1])
-            
-            print ""
+                logging.info(" %s\t%s\t%s" % (
+                    '{0: <16}'.format(key), '{0: <8}'.format(payload.required_options[key][0]), payload.required_options[key][1]
+                ))
     
     
     def SetPayload(self, lang, name, options):

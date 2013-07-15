@@ -24,8 +24,8 @@ def pyherion(code):
 	Returns the encrypted python code as a string.
 	"""
 
-	imports = list()
-	codebase = list()
+	imports = []
+	codebase = []
 	
 	# strip out all imports from the code so pyinstaller can properly
 	# launch the code by preimporting everything at compiletime
